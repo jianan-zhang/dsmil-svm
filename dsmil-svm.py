@@ -1,8 +1,4 @@
-"""
-Implements the Normalized Set Kernel
-of Gartner et al.
-示例特征+包相似度   豪斯多夫距离效果差
-"""
+
 from __future__ import print_function, division
 
 import time
@@ -25,7 +21,7 @@ def normalization(m):
 def hausdorff(listA, listB):
     ha = []
     hb = []
-    ain = np.array(listA).shape[1]  # 聚类中心的个数
+    ain = np.array(listA).shape[1]  
     bin = np.array(listB).shape[1]
 
     for j in range(len(listA)):
@@ -40,19 +36,6 @@ def hausdorff(listA, listB):
                 ha[i] = np.min(ha[i])
     hAB = np.mean(ha)
 
-    # for j in range(len(listB)):
-    #     for i in range(bin):
-    #         hb.append([])
-    #         B = np.array(listB[j][i])
-    #         for n in range(len(listA)):
-    #             for m in range(ain):
-    #                 A = np.array(listA[n][m])
-    #                 min2 = np.linalg.norm(B - A, ord=2)
-    #                 hb[i].append(min2)
-    #             hb[i] = np.min(hb[i])
-    # hBA = np.max(hb)
-    # HAB = max(hAB, hBA)
-    # HAB = (hAB + hBA) / 2
     return hAB
 
 
@@ -65,7 +48,7 @@ def tanimoto_coefficient(listA, listB):
     """
 
     ha = []
-    ain = np.array(listA).shape[1]  # 聚类中心的个数
+    ain = np.array(listA).shape[1]  
     bin = np.array(listB).shape[1]
 
     for j in range(len(listA)):
@@ -87,33 +70,32 @@ def tanimoto_coefficient(listA, listB):
 
 def ins_to_bag_sim(bags):
     """
-    AP聚类计算示例与包之间的相似性
+    AP Clustering
     """
     bags2 = []
-    d = []  # 示例与包的相似度
-    bcc = []  # 所有包的聚类中心
-    bs = []  # 包之间的相似度
+    d = []  
+    bcc = []  
+    bs = []  
 
-    # 对每一个包进行聚类操作
     for m in range(len(bags)):
-        a = bags[m]  # 第m个包
+        a = bags[m]  
         bcc.append([])
         d.append([])
-        # print('a_len', len(a))  # 包中示例个数
+        # print('a_len', len(a))  
         ap = AffinityPropagation().fit(a)
-        inss = ap.affinity_matrix_  # 相似度矩阵
-        cn = ap.cluster_centers_indices_  # 聚类中心索引
-        cc = ap.cluster_centers_  # 聚类中心
+        inss = ap.affinity_matrix_  
+        cn = ap.cluster_centers_indices_  
+        cc = ap.cluster_centers_  
 
         if len(cn) != 0:
-            bcc[m].append(cc.tolist())  # bcc第m行是第m个包的聚类中心
+            bcc[m].append(cc.tolist())  
         else:
             bcc[m].append(a.tolist())
 
-        ins_b = -1 * np.mean(inss, axis=1)  # 每一行相似度的均值作为该示例与包的相似性，所以个数为包中示例的个数
-        if len(set(ins_b)) == 1:  # 若包中只有两个示例，则相似度一样，标准化后为空值
+        ins_b = -1 * np.mean(inss, axis=1)  
+        if len(set(ins_b)) == 1:  
             ins_to_bag = np.array([1 for v in range(len(ins_b))])
-        elif len(ins_b) == 1:  # 若包中只有一个示例，则示例对包的相似度为1
+        elif len(ins_b) == 1:  
             ins_to_bag = np.array([1])
         else:
             ins_to_bag = normalization(ins_b)
@@ -123,7 +105,7 @@ def ins_to_bag_sim(bags):
         a = np.asmatrix(a)
         bags2.append(a)
 
-    # 计算聚类中心之间的距离
+    
     for n in range(len(bcc)):
         bs.append([])
         for z in range(len(bcc)):
@@ -173,15 +155,14 @@ class DSMIL(SVM):
         @param y : an array-like object of length n containing -1/+1 labels
         """
 
-        bags1 = list(map(np.asmatrix, bags))  # np.asmatrix将输入数据输出为矩阵形式
-        self._y = np.asmatrix(y).reshape((-1, 1))  # reshape(-1,1)转换成1列
-        bags2, bcc, bgsim = ins_to_bag_sim(bags1)  # bags2是将得到的示例重要性与示例矩阵进行哈达玛乘积
+        bags1 = list(map(np.asmatrix, bags))  
+        self._y = np.asmatrix(y).reshape((-1, 1))  
+        bags2, bcc, bgsim = ins_to_bag_sim(bags1)  
         bagsim = normalization(bgsim)
         S = np.sqrt(np.mat(bagsim)).tolist()
         bags3 = list(np.array(S[0]) * np.array(bags2))
-        #bags3 = list(np.array(S[0]) * np.array(bags1))  # 消融实验，包相似性
         self._bags = bags3
-        #self._bags = bags2  # 消融实验，示例之间的相似性
+
 
         if self.scale_C:
             C = self.C / float(len(self._bags))
@@ -237,8 +218,6 @@ class DSMIL(SVM):
             bagsim = normalization(bgsim)
             S = np.sqrt(np.mat(bagsim)).tolist()
             bags3 = list(np.array(S[0]) * np.array(Pbags))
-            #bags3 = list(np.array(S[0]) * np.array(predict_bags))  # 消融实验，包相似性
-            #bags3 = Pbags  # 消融实验，示例相似性
             K = kernel(bags3, self._sv_bags)
             sim_time = end_sim - start_sim
             return np.array(self._b + K * spdiag(self._sv_y) * self._sv_alphas).reshape((-1,)), sim_time
